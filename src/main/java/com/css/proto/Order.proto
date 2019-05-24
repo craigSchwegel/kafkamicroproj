@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package com.mycompany.proto;
+option java_package = "com.css.proto";
+option java_outer_classname = "OrderProtos";
+
+message OrderMessage {
+
+    enum BuySell {
+        BUY = 0;
+        SELL = 1;
+        SELLSHORT = 2;
+    }
+    int32 order_id = 1;
+    int32 quantity = 2;
+    float price = 3;
+    int32 quantity_filled = 4;
+    float avg_price = 5;
+    BuySell side = 6;
+    string order_status = 7;
+    string order_comment = 8;
+    int64 order_time = 9;
+    int64 audit_time = 10;
+    string audit_user = 11;
+    string trade_account = 12;
+    string legal_entity = 13;
+    string customer = 14;
+    string ticker = 15;
+
+}
