@@ -11,25 +11,30 @@
  */
 package com.css.tradesimulator;
 
+import com.css.kafka.ProducerConsumerCreator;
 import com.css.proto.ExecProtos;
-import com.css.kafka.ProduerConsumerCreator;
 import com.css.kafka.IKafkaConstants;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Arrays;
 
 public class ByteExecutionConsumer {
 
+    final static Logger logger = LoggerFactory.getLogger(ByteExecutionConsumer.class);
     public static void main(String[] args) {
-        System.out.println("ByteExecutionConsumer::main() Starting Consumer...");
+        logger.info("main() Starting Consumer...");
         runConsumer();
     }
     static void runConsumer() {
-        Consumer<Long, byte[]> consumer = ProduerConsumerCreator.createByteExecutionConsumer();
+        logger.info("Creating ByteExecutionConsumer...");
+        Consumer<Long, byte[]> consumer = ProducerConsumerCreator.createByteExecutionConsumer();
         int noMessageFound = 0;
+        logger.info("Subscribing to "+IKafkaConstants.BYTE_EXEC_TOPIC_NAME);
         consumer.subscribe(Arrays.asList(IKafkaConstants.BYTE_EXEC_TOPIC_NAME));
         try {
             while (true) {
@@ -39,17 +44,19 @@ public class ByteExecutionConsumer {
                     try
                     {
                         execMsg = ExecProtos.ExecMessage.parseFrom(record.value());
-                        System.out.printf("offset = %d, key = %d, value = %s%n", record.offset(), record.key(), execMsg.toString());
+                        logger.info("offset = %d, key = %d, value = %s%n", record.offset(), record.key(), execMsg.toString());
                     }
                     catch (com.google.protobuf.InvalidProtocolBufferException ex)
                     {
-                        System.out.println("ByteOrderConsumer::ERROR parsing Order from bytes[]");
-                        ex.printStackTrace();
+                        logger.error("Caught exception parsing Execution from bytes[]",ex);
                     }
                 }
             }
+        } catch (Exception e) {
+            logger.error("Caught exception consuming from topic "+IKafkaConstants.BYTE_EXEC_TOPIC_NAME,e);
         } finally {
-            consumer.close();
+            if (consumer != null)
+                consumer.close();
         }
     }
 }

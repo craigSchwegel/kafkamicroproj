@@ -1,5 +1,8 @@
 package com.css.tradesimulator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -7,25 +10,22 @@ import java.util.Arrays;
 
 public class ExecutionSimulatorMain {
 
+    final static Logger logger = LoggerFactory.getLogger(ExecutionSimulatorMain.class);
     public static void main(String[] args)
     {
-        int iArgsCount = 0;
-        for (String sArg : args)
-        {
-            System.out.println("ARG"+iArgsCount++ + "::"+sArg);
-        }
-
-        Arrays.stream(args).forEach( (k) -> System.out.println("LAMBDA ARGS::"+k));
+        Arrays.stream(args).forEach( (k) -> logger.info("LAMBDA ARGS::"+k));
         while (true) {
-            System.out.println("Enter number of generators to launch or 'exit' or 0 to stop: ");
+            System.out.print("Enter number of generators to launch or 'exit' or 0 to stop: ");
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
                 String sInput = reader.readLine();
+                logger.debug("Received input from the System: "+sInput);
                 if (sInput.equals("0") || sInput.equalsIgnoreCase("exit")) {
-                    System.out.println("Received exit code.  EXITING NOW ...");
+                    logger.info("Received exit code.  EXITING NOW ...");
                     break;
                 }
                 int nbrOfGenerators = Integer.parseInt(sInput);
+                logger.debug("Creating "+nbrOfGenerators+" number of Simulation Engines.");
                 for (int i=1; i <= nbrOfGenerators; i++)
                 {
                     String sFileName = args[0] + "\\" + args[1] + i + ".txt";
@@ -36,16 +36,13 @@ public class ExecutionSimulatorMain {
                     new Thread(objSE).start();
                 }
 
-                System.out.println("Starting "+nbrOfGenerators+" execution simulation generators...");
+                logger.info("Finished starting "+nbrOfGenerators+" execution simulation generators...");
             } catch (IOException iox) {
-                System.out.println("Error reading input from user at start up.");
-                System.out.println(iox.toString());
-                iox.printStackTrace();
+                logger.error("Error reading input from user at start up.",iox);
             } catch (Exception ex) {
-                System.out.println("General exception received handling input from prompt.");
-                System.out.println(ex.toString());
-                ex.printStackTrace();
+                logger.error("General exception received handling input from prompt.",ex);
             }
+
         }
     }
 }

@@ -4,9 +4,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SimulationFileWriter implements MsgFileWriterInterface {
 
+    final static Logger logger = LoggerFactory.getLogger(SimulationFileWriter.class);
     private String sFile;
     private int fileID;
     private FileWriter fw;
@@ -28,15 +31,21 @@ public class SimulationFileWriter implements MsgFileWriterInterface {
         }
         catch (IOException iox)
         {
-            System.out.println("ERROR: Unable to create file "+sFile);
-            iox.printStackTrace();
+            logger.error("Unable to create file "+sFile);
+            logger.error("exception creating file ",iox);
             return false;
         }
+        logger.info("File created successfully: "+sFile);
         return true;
     }
     @Override
     public void writeMessage(String sMsg) {
-        writeMessageAsBytes(sMsg.getBytes(StandardCharsets.UTF_8));
+        try {
+            writeMessageAsBytes(sMsg.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e)
+        {
+            logger.error("Exception caught converting String message to bytes.",e);
+        }
     }
 
     @Override
@@ -46,11 +55,10 @@ public class SimulationFileWriter implements MsgFileWriterInterface {
                 pw.println(new String(bArr));
             }
             else
-                System.out.println("fos is NULL!");
+                logger.info("fos is NULL!");
         } catch (Exception iox)
         {
-            System.out.println("ERROR:: Writing message to file as Byte array.");
-            iox.printStackTrace();
+            logger.error("Writing message to file as Byte array.",iox);
         }
     }
 
@@ -66,7 +74,7 @@ public class SimulationFileWriter implements MsgFileWriterInterface {
         }
         catch (Exception iox)
         {
-
+            logger.error("Exception flushing and closing file.",iox);
         }
 
     }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package com.css.proto;
+option java_package = "com.css.proto";
+option java_outer_classname = "ExecProtos";
+
+message ExecMessage {
+
+    int32 exec_order_id = 1;
+    int32 exec_id = 2;
+    int32 quantity = 3;
+    float price = 4;
+    int32 trade_date = 5;
+    int32 settle_date = 6;
+    string exec_status = 7;
+    string exec_comment = 8;
+    int64 exec_time = 9;
+    int64 audit_time = 10;
+    string audit_user = 11;
+
+}

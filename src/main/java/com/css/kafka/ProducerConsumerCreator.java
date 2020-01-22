@@ -6,11 +6,12 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.common.serialization.*;
 
 import java.util.Properties;
 
-public class ProduerConsumerCreator {
+public class ProducerConsumerCreator {
 
     public static Producer<Long, String> createOrderProducer() {
         Properties props = new Properties();
@@ -26,6 +27,17 @@ public class ProduerConsumerCreator {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, IKafkaConstants.KAFKA_BROKERS);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, IKafkaConstants.ORDER_BYTE_CLIENT_ID);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        //props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, OrderProtos.OrderMessage.class.getName());
+        //props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, CustomPartitioner.class.getName());
+        return new KafkaProducer<>(props);
+    }
+
+    public static Producer<Long, String> createByteOrderAvgPxProducer() {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, IKafkaConstants.KAFKA_BROKERS);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, IKafkaConstants.ORDER_BYTE_AVG_PX_CLIENT_ID);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         //props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, OrderProtos.OrderMessage.class.getName());
@@ -88,5 +100,24 @@ public class ProduerConsumerCreator {
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         //props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, CustomPartitioner.class.getName());
         return new KafkaProducer<>(props);
+    }
+
+    public static Properties createOrderPrintStreamAppProps() {
+        Properties props = new Properties();
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, IKafkaConstants.KAFKA_BROKERS);
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, IKafkaConstants.ORDER_PRINT_APP_ID);
+        //props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, LongDeserializer.class.getName());
+        //props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.Long().getClass().getName());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.ByteArray().getClass().getName());
+        return props;
+    }
+    public static Properties createAveragePriceByTickerStreamAppProps() {
+        Properties props = new Properties();
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, IKafkaConstants.KAFKA_BROKERS);
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, IKafkaConstants.AVERAGE_PRICE_BY_TICKER_APP_ID);
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.Long().getClass().getName());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.ByteArray().getClass().getName());
+        return props;
     }
 }

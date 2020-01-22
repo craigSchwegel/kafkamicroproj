@@ -22,11 +22,13 @@
 package com.css.micro.median;
 
 import com.css.kafka.IKafkaConstants;
-import com.css.kafka.ProduerConsumerCreator;
+import com.css.kafka.ProducerConsumerCreator;
 import com.css.proto.ExecProtos;
 import com.css.proto.OrderProtos;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,8 +36,9 @@ import java.util.concurrent.*;
 
 public class MedianConsumer {
 
+    final static Logger logger = LoggerFactory.getLogger(MedianConsumer.class);
     public static void main(String[] args) {
-        System.out.println("ByteExecutionConsumer::main() Starting Consumer...");
+        logger.info("ByteExecutionConsumer::main() Starting Consumer...");
         MedianConsumer mc = new MedianConsumer();
         mc.initialize();
         mc.runConsumer();
@@ -51,14 +54,14 @@ public class MedianConsumer {
     }
     public void runConsumer() {
 
-        System.out.println("Starting runConsumer()...");
+        logger.info("Starting runConsumer()...");
         try
         {
-            ConsumerProcessor ordMsgProcessor = new ConsumerProcessor(orderQueue, ProduerConsumerCreator.createByteOrderConsumer(), IKafkaConstants.BYTE_ORDER_TOPIC_NAME);
+            ConsumerProcessor ordMsgProcessor = new ConsumerProcessor(orderQueue, ProducerConsumerCreator.createByteOrderConsumer(), IKafkaConstants.BYTE_ORDER_TOPIC_NAME);
             ExecutorService svcOrdMsg = Executors.newSingleThreadExecutor();
             Future<String> ordMsgProcessorFuture = svcOrdMsg.submit(ordMsgProcessor);
 
-            ConsumerProcessor execMsgProcessor = new ConsumerProcessor(execQueue, ProduerConsumerCreator.createByteExecutionConsumer(), IKafkaConstants.BYTE_EXEC_TOPIC_NAME);
+            ConsumerProcessor execMsgProcessor = new ConsumerProcessor(execQueue, ProducerConsumerCreator.createByteExecutionConsumer(), IKafkaConstants.BYTE_EXEC_TOPIC_NAME);
             ExecutorService svcExecMsg = Executors.newSingleThreadExecutor();
             Future<String> execMsgProcessorFuture = svcExecMsg.submit(execMsgProcessor);
 
@@ -72,9 +75,10 @@ public class MedianConsumer {
                 BufferedReader reader =
                         new BufferedReader(new InputStreamReader(System.in));
                 String sInput = reader.readLine();
+                logger.debug("Received "+sInput+" from the keyboard.");
                 if (sInput.equalsIgnoreCase("exit"))
                 {
-                    System.out.println("TradeSimulationMain::Exit code received. Shutting down Thread.");
+                    logger.info("Exit code received. Shutting down Thread.");
                     ordMsgProcessorFuture.cancel(true);
                     execMsgProcessorFuture.cancel(true);
                     break;
@@ -83,8 +87,7 @@ public class MedianConsumer {
 
         } catch (Exception e)
         {
-            System.out.println("TradeSimulationMain:Caught ThreadInterruptException...");
-            e.printStackTrace();
+            logger.error("Caught ThreadInterruptException...",e);
         }
     }
 
@@ -95,7 +98,7 @@ public class MedianConsumer {
                 while (true) {
                     byte[] ordMessage = orderQueue.take();
                     OrderProtos.OrderMessage o = OrderProtos.OrderMessage.parseFrom(ordMessage);
-                    System.out.println("createAndRunOrderThread():: Processing Order ID = "+o.getOrderId()+" :: ticker = "+o.getTicker());
+                    logger.info("createAndRunOrderThread()::Processing Order ID = "+o.getOrderId()+" :: ticker = "+o.getTicker());
                     orderTickerMap.put(Long.valueOf(o.getOrderId()),o.getTicker());
                     if (!tickerMedianMap.contains(o.getTicker()))
                     {
@@ -111,12 +114,11 @@ public class MedianConsumer {
             }
             catch (InterruptedException ie)
             {
-                ie.printStackTrace();
+                logger.error("Caught ThreadInterruptException...",ie);
             }
             catch (com.google.protobuf.InvalidProtocolBufferException ex)
             {
-                System.out.println("ByteOrderConsumer::ERROR parsing Order from bytes[]");
-                ex.printStackTrace();
+                logger.error("ERROR parsing Order from bytes[]",ex);
             }
         };
         Thread ordThread = new Thread(r);
@@ -124,14 +126,14 @@ public class MedianConsumer {
     }
     public void createAndRunExecutionThread()
     {
-        Producer<String, String> medianProducer = ProduerConsumerCreator.createMedianProducer();
+        Producer<String, String> medianProducer = ProducerConsumerCreator.createMedianProducer();
         Runnable r1 = () -> {
             try {
                 while (true) {
                     byte[] execMessage = execQueue.take();
                     ExecProtos.ExecMessage e = ExecProtos.ExecMessage.parseFrom(execMessage);
                     String ticker = orderTickerMap.get(Long.valueOf(e.getExecOrderId()));
-                    System.out.println("createAndRunExecutionThread():: Processing ticker = "+ticker);
+                    logger.info("createAndRunExecutionThread():: Processing ticker = "+ticker);
                     if (ticker == null)
                     {
                         int count = 0;
@@ -142,7 +144,7 @@ public class MedianConsumer {
                         }
                         if (ticker == null)
                         {
-                            System.out.println("ERROR processing execution. ORDER NOT FOUND after 3 tries!!! orderId="+e.getExecOrderId());
+                            logger.error("ERROR processing execution. ORDER NOT FOUND after 3 tries!!! orderId="+e.getExecOrderId());
                             continue;
                         }
                     }
@@ -157,25 +159,24 @@ public class MedianConsumer {
                         }
                         if (ticker == null)
                         {
-                            System.out.println("ERROR processing execution. STREAMING MEDIAN NOT FOUND after 3 tries!!! ticker="+ticker);
+                            logger.error("ERROR processing execution. STREAMING MEDIAN NOT FOUND after 3 tries!!! ticker="+ticker);
                             continue;
                         }
                     }
                     double median = sm.calcMedian(e.getQuantity());
                     String medVal = ticker + "|" + median;
                     ProducerRecord<String, String> record = new ProducerRecord<String, String>(IKafkaConstants.MEDIAN_TOPIC_NAME, ticker, medVal);
-                    System.out.println("**** MEDIAN: "+medVal);
+                    logger.info("**** MEDIAN: "+medVal);
                     medianProducer.send(record);
                 }
             }
             catch (InterruptedException ie)
             {
-                ie.printStackTrace();
+                logger.error("Caught ThreadInterruptException...",ie);
             }
             catch (com.google.protobuf.InvalidProtocolBufferException ex)
             {
-                System.out.println("ByteOrderConsumer::ERROR parsing Order from bytes[]");
-                ex.printStackTrace();
+                logger.error("ERROR parsing Order from bytes[]",ex);
             }
         };
         Thread execThread = new Thread(r1);

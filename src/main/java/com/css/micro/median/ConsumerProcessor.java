@@ -14,6 +14,8 @@ package com.css.micro.median;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -22,6 +24,7 @@ import java.util.concurrent.Callable;
 
 public class ConsumerProcessor implements Callable<String> {
 
+    final static Logger logger = LoggerFactory.getLogger(ConsumerProcessor.class);
     public ConsumerProcessor(BlockingQueue<byte[]> queueVal, Consumer<Long, byte[]> consumerVal, String topicVal)
     {
         queue = queueVal;
@@ -35,7 +38,7 @@ public class ConsumerProcessor implements Callable<String> {
 
     @Override
     public String call() throws Exception {
-
+        logger.info("Begin call() method");
         consumer.subscribe(Arrays.asList(topic));
         try {
             while (true) {
@@ -44,8 +47,11 @@ public class ConsumerProcessor implements Callable<String> {
                     queue.put(record.value());
                 }
             }
+        } catch (Exception e) {
+            logger.error("Caught exception consuming records.",e);
         } finally {
-            consumer.close();
+            if (consumer != null)
+                consumer.close();
             return "Completed";
         }
     }

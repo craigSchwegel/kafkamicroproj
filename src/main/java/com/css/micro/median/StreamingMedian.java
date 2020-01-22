@@ -13,8 +13,12 @@
  */
 package com.css.micro.median;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StreamingMedian {
 
+    final static Logger logger = LoggerFactory.getLogger(StreamingMedian.class);
     class Node {
         int value;
         Node prev;
@@ -33,6 +37,7 @@ public class StreamingMedian {
 
     public static void main(String[] args)
     {
+        logger.info("Begin main()");
         try {
             StreamingMedian sm = new StreamingMedian();
             int[] intStreamArr = {2, 4, 19, 100000, 99, 0, 9, 8, 2, 3, 234, 1, 2, 5, 19};
@@ -42,7 +47,7 @@ public class StreamingMedian {
             }
         }catch (Exception ex)
         {
-            ex.printStackTrace();
+            logger.error("Caught exception running streaming median",ex);
         }
     }
 
@@ -59,7 +64,7 @@ public class StreamingMedian {
     public double calcMedian(int ival)
     {
         try {
-            System.out.println("calcMedian(" + ival + ")");
+            logger.info("calcMedian(" + ival + ")");
             Node newNode = new Node(ival);
             //First number in stream
             if (count == 0) {
@@ -170,13 +175,15 @@ public class StreamingMedian {
                     median = medNode.value;
                 }
             } //end if (count > 2)
+            logger.info("returning median "+median);
             return median;
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            return median;
+            logger.error("Caught exception calculating median.",e);
         }
+        logger.debug("returning median after exception. normal return statement not hit. "+median);
+        return median;
     }
     public void printMedianAndLinkedList()
     {
@@ -200,11 +207,11 @@ public class StreamingMedian {
                     break;
                 }
             }
-            System.out.println("StreamingMedian.printMedianLinkedList():: " + sb.toString());
-            System.out.println("StreamingMedian.printMedianLinkedList():: Median = " + median);
+            logger.debug("printMedianLinkedList():: " + sb.toString());
+            logger.debug("printMedianLinkedList():: Median = " + median);
         } catch (Exception ex)
         {
-            ex.printStackTrace();
+            logger.error("Caught exception printing median linked list.",ex);
         }
     }
 }

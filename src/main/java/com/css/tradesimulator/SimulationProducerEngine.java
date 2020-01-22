@@ -22,11 +22,14 @@ import com.css.proto.OrderProtos;
 import com.css.kafka.IKafkaConstants;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 
 public class SimulationProducerEngine implements Callable<String> {
 
+    final static Logger logger = LoggerFactory.getLogger(SimulationProducerEngine.class);
     private int simulatorId;
     private long transactionLimit;
     private Producer producerSvr;
@@ -43,7 +46,7 @@ public class SimulationProducerEngine implements Callable<String> {
     @Override
     public String call() throws Exception {
 
-        System.out.println("Inside SimulationEngine ID="+ simulatorId +" run() method");
+        logger.info("Begin SimulationEngine ID="+ simulatorId +" call() method");
         long transCount = 0;
         while (transCount++ < this.transactionLimit)
         {
@@ -53,26 +56,28 @@ public class SimulationProducerEngine implements Callable<String> {
                 Long orderId = Long.getLong(Integer.toString(ordMsg.getOrderId()));
                 ProducerRecord<Long, String> record = new ProducerRecord<Long, String>(IKafkaConstants.ORDER_TOPIC_NAME, orderId, ordMsg.toString().replaceAll("\\n", "|"));
                 producerSvr.send(record);
-                System.out.println("SimulationEngine(" + simulatorId + ")::Producing OrderId=" + ordMsg.getOrderId());
+                logger.info("SimulationEngine(" + simulatorId + ")::Producing OrderId=" + ordMsg.getOrderId());
                 while (ordMsg.getQuantity() > ordMsg.getQuantityFilled())
                 {
                     ExecProtos.ExecMessage exeMsg = SimulatorHelper.fillOrder(ordMsg);
                     Long execId = Long.getLong(Integer.toString(exeMsg.getExecId()));
                     ProducerRecord<Long, String> eRecord = new ProducerRecord<Long, String>(IKafkaConstants.EXEC_TOPIC_NAME,execId,exeMsg.toString().replaceAll("\\n", "|"));
                     execProdSvr.send(eRecord);
-                    System.out.println("SimulationEngine(" + simulatorId + ")::Writing ExecId=" + exeMsg.getExecId());
+                    logger.info("SimulationEngine(" + simulatorId + ")::Writing ExecId=" + exeMsg.getExecId());
                     ordMsg = ordMsg.toBuilder().setQuantityFilled(ordMsg.getQuantityFilled() + exeMsg.getQuantity()).build();
                 }
-                System.out.println("SimulationEngine(" + simulatorId + ")::OrderID=" + ordMsg.getOrderId() + "||Qty=" + ordMsg.getQuantity() + "||QtyFilled=" + ordMsg.getQuantityFilled());
+                logger.info("SimulationEngine(" + simulatorId + ")::OrderID=" + ordMsg.getOrderId() + "||Qty=" + ordMsg.getQuantity() + "||QtyFilled=" + ordMsg.getQuantityFilled());
 
             }
             catch (Exception e)
             {
-                System.out.println("ERROR:: Simulator="+simulatorId);
-                System.out.println("Breaking out of While loop.  Transaction limit not reached.");
+                logger.error("SimulatorEngine("+simulatorId+")::"+e.getMessage());
+                logger.error("SimulatorEngine("+simulatorId+")",e);
+                logger.debug("Breaking out of While loop.  Transaction limit not reached.");
                 break;
             }
         } //end while
+        logger.info("SimulationEngine(" + simulatorId + ")::Ending Thread");
         return "Ending Thread";
     } //end call()
 

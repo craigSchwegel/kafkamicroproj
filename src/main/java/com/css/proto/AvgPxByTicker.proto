@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package com.css.proto;
+option java_package = "com.css.proto";
+option java_outer_classname = "AvgPxByTickerProtos";
+
+message AvgPxByTickerMessage {
+
+    string key = 1;
+    string ticker = 2;
+    int32 quantity = 3;
+    float average_price = 4;
+}

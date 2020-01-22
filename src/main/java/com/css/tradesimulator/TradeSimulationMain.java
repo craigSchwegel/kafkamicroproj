@@ -19,32 +19,39 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import com.css.kafka.ProduerConsumerCreator;
+
+import com.css.kafka.ProducerConsumerCreator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class TradeSimulationMain {
 
+    final static Logger logger = LoggerFactory.getLogger(TradeSimulationMain.class);
+
     public static void main(String[] args) {
         int iArgsCount = 0;
         for (String sArg : args) {
-            System.out.println("TradeSimulationMain:ARG" + iArgsCount++ + "::" + sArg);
+            logger.debug("ARG" + iArgsCount++ + "::" + sArg);
         }
 
-        Arrays.stream(args).forEach((k) -> System.out.println("TradeSimulationMain:LAMBDA ARGS::" + k));
-        //SimulationProducerEngine spe = new SimulationProducerEngine(22, 100, ProduerConsumerCreator.createOrderProducer(), ProduerConsumerCreator.createExecutionProducer());
-        ByteSimulationProducerEngine spe = new ByteSimulationProducerEngine(22, 100, ProduerConsumerCreator.createByteOrderProducer(), ProduerConsumerCreator.createByteExecutionProducer());
+        Arrays.stream(args).forEach((k) -> logger.debug("LAMBDA ARGS::" + k));
+        //SimulationProducerEngine spe = new SimulationProducerEngine(22, 100, ProducerConsumerCreator.createOrderProducer(), ProducerConsumerCreator.createExecutionProducer());
+        ByteSimulationProducerEngine spe = new ByteSimulationProducerEngine(22, 100, ProducerConsumerCreator.createByteOrderProducer(),
+                                                                                                      ProducerConsumerCreator.createByteExecutionProducer(),
+                                                                                                      ProducerConsumerCreator.createByteOrderAvgPxProducer());
         Executor executor = Executors.newSingleThreadExecutor();
         try {
             Future futureThread = ((ExecutorService) executor).submit(spe);
             while (true)
             {
-                System.out.print("Type exit to quit: ");
+                logger.info("Type exit to quit: ");
                 BufferedReader reader =
                         new BufferedReader(new InputStreamReader(System.in));
                 String sInput = reader.readLine();
                 if (sInput.equalsIgnoreCase("exit"))
                 {
-                    System.out.println("TradeSimulationMain::Exit code received. Shutting down Thread.");
+                    logger.info("Exit code received. Shutting down Thread.");
                     futureThread.cancel(true);
                     break;
                 }
@@ -52,9 +59,9 @@ public class TradeSimulationMain {
 
         } catch (Exception e)
         {
-            System.out.println("TradeSimulationMain:Caught ThreadInterruptException...");
+            logger.info("Caught ThreadInterruptException...");
             e.printStackTrace();
         }
-        System.out.println("TradeSimulationMain::Exiting program...");
+        logger.info("Exiting program...");
     }
 }
